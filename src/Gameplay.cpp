@@ -13,7 +13,7 @@ Gameplay::~Gameplay() {}
 
 void Gameplay::init() {
 	tableTexture = loadTexture("table.bmp");
-	backgroundTexture = loadTexture("background.bmp");
+	backgroundTexture = loadTexture("background2.bmp");
 	checkerTextures[0] = loadTexture("football.bmp");
 	checkerTextures[1] = loadTexture("basketball.bmp");
 	checkerTextures[2] = loadTexture("stone.bmp");
@@ -95,7 +95,7 @@ bool Gameplay::virus(){
 	int cnt = 0;
 	while(cnt < 5 && !bfs.empty()){
 		cnt++;
-		int2 currPos = bfs.front();
+		int2 currPos = bfs.front(); bfs.pop();
 		forGigo.push_back(currPos);
 		grid[currPos.y][currPos.x] = CHECKER_TYPES::STONE;
 
@@ -162,7 +162,8 @@ bool Gameplay::destroyOneChecker() {
 	}
 	for(int i=0; i<checkers.size(); i++){
 		if(checkers[i].pos.x == column && checkers[i].pos.y < row){
-			checkers[i].pos = {column, row + 1};
+			// beshe checkers[i].pos = {column, row + 1};
+			checkers[i].pos.y++;
 		}
 	}
 	return true;
@@ -194,6 +195,7 @@ int2 Gameplay::playMove(int column) {
             continue;
         }else{
             row = r-1;
+			break;
         }
     }
     if(row == -2){
@@ -461,6 +463,7 @@ int2 Gameplay::smartBotDecision() {
 		grid[pos.y][pos.x] = getPlayerChecker(PLAYERS::PLAYER_TWO);
 
 		detectWin();
+		grid[pos.y][pos.x] = CHECKER_TYPES::NONE;
 		PLAYERS wouldBeWinner = m_winner;
 		m_winner = PLAYERS::NONE;
 
@@ -476,6 +479,7 @@ int2 Gameplay::smartBotDecision() {
 		grid[pos.y][pos.x] = getPlayerChecker(PLAYERS::PLAYER_ONE);
 
 		detectWin();
+		grid[pos.y][pos.x] = CHECKER_TYPES::NONE;
 		PLAYERS wouldBeWinner = m_winner;
 		m_winner = PLAYERS::NONE;
 
