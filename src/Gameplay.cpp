@@ -23,8 +23,15 @@ void Gameplay::init() {
 	bonusTextures[2] = loadTexture("remove_one.bmp");
 	bonusTextures[3] = loadTexture("stone_virus.bmp");
 
+	bonusUnavailableTexture = loadTexture("bonusUnavailable.bmp");
+
 	m_turnPlayer = PLAYERS::PLAYER_ONE;
 	allCheckersLanded = true;
+
+	for (int i = 0; i < NUMBER_OF_BONUS_TYPES; i++) {
+		usedBonuses[0][i] = false;
+		usedBonuses[1][i] = false;
+	}
 
 	int2 screenDims = getScreenDims();
 	SDL_QueryTexture(tableTexture, nullptr, nullptr, &tableTexDims.x, &tableTexDims.y);
@@ -169,7 +176,7 @@ bool Gameplay::destroyOneChecker() {
 	return true;
 }
 
-int2 Gameplay::playMove() {
+int2 Gameplay::getEmptyPosition() {
     int column = checkColumn();
     if(column == -1){ return {-1, -1}; }
     int row = -2;
@@ -187,7 +194,7 @@ int2 Gameplay::playMove() {
 	if (row == -1) { return { -1, -1 }; }
     return {column, row};
 }
-int2 Gameplay::playMove(int column) {
+int2 Gameplay::getEmptyPosition(int column) {
     if(column == -1){ return {-1, -1}; }
     int row = -2;
     for(int r=0; r<6; r++){
@@ -337,6 +344,9 @@ void Gameplay::drawBonuses() {
 		SDL_Rect bonusRect = { x, 20 + i*(220), 200, 200};
 		if (getBonusNumber(currBonus) == i) { bonusRect.x += selectedOffset; }
 		drawObject(bonusTextures[i], bonusRect);
+		if (usedBonuses[getPlayerNumber(m_turnPlayer)][i]) {
+			drawObject(bonusUnavailableTexture, bonusRect);
+		}
 	}
 }
 
@@ -377,16 +387,21 @@ void Gameplay::update() {
 		if (m_turnPlayer == PLAYERS::PLAYER_ONE) { m_turnPlayer = PLAYERS::PLAYER_TWO; }
 		else if (m_turnPlayer == PLAYERS::PLAYER_TWO) { m_turnPlayer = PLAYERS::PLAYER_ONE; }
 	}
-	if (iptm.anyKeyIsPressed()) {
+	if (iptm.anyKeyIsPressed() && gameType == GAME_TYPE::MADNESS_MULTIPLAYER) {
 		if (!allCheckersLanded) { return; }
 		if (iptm.keyIsPressed(SDL_SCANCODE_1)) { currBonus = BONUS::BONUS_TURN; }
 		if (iptm.keyIsPressed(SDL_SCANCODE_2)) { currBonus = BONUS::DESTROY_COLUMN; }
 		if (iptm.keyIsPressed(SDL_SCANCODE_3)) { currBonus = BONUS::REMOVE_ONE; }
 		if (iptm.keyIsPressed(SDL_SCANCODE_4)) { currBonus = BONUS::VIRUS; }
+		if (iptm.keyIsPressed(SDL_SCANCODE_0)) { currBonus = BONUS::NONE; }
+
+		if (currBonus != BONUS::NONE && usedBonuses[getPlayerNumber(m_turnPlayer)][getBonusNumber(currBonus)]) {
+			currBonus = BONUS::NONE;
+		}
 	}
 	if (iptm.m_mouseOnClick) {
 		if (!allCheckersLanded) { return; }
-		int2 pos = playMove();
+		int2 pos = getEmptyPosition();
 		if (pos == int2{ -1, -1 }) { return; }
 		
 		if(currBonus == BONUS::DESTROY_COLUMN){
@@ -401,11 +416,13 @@ void Gameplay::update() {
 			newChecker.init(checkerTextures[getCheckerNumber(grid[pos.y][pos.x])], drawRect.y, pos, positionDrawRects);
 			checkers.push_back(newChecker);
 		}
+		if(currBonus != BONUS::NONE){ usedBonuses[getPlayerNumber(m_turnPlayer)][getBonusNumber(currBonus)] = true; }
 
 		if(currBonus != BONUS::BONUS_TURN){
 			if (m_turnPlayer == PLAYERS::PLAYER_ONE) { m_turnPlayer = PLAYERS::PLAYER_TWO; }
 			else if (m_turnPlayer == PLAYERS::PLAYER_TWO) { m_turnPlayer = PLAYERS::PLAYER_ONE; }
 		}
+
 		
 		currBonus = BONUS::NONE;
 	}
@@ -431,17 +448,14 @@ void Gameplay::destroy() {
 	checkers.clear();
 
 	SDL_DestroyTexture(tableTexture);
-	tableTexture = nullptr;
 	SDL_DestroyTexture(backgroundTexture);
-	backgroundTexture = nullptr;
-	for (int i = 0; i < (sizeof(checkerTextures) / sizeof(SDL_Texture*)); i++) {
+	for (int i = 0; i < NUMBER_OF_CHECKER_TYPES; i++) {
 		SDL_DestroyTexture(checkerTextures[i]);
-		checkerTextures[i] = nullptr;
 	}
-	for (int i = 0; i < (sizeof(bonusTextures) / sizeof(SDL_Texture*)); i++) {
+	for (int i = 0; i < NUMBER_OF_BONUS_TYPES; i++) {
 		SDL_DestroyTexture(bonusTextures[i]);
-		bonusTextures[i] = nullptr;
 	}
+	SDL_DestroyTexture(bonusUnavailableTexture);
 }
 
 
@@ -449,7 +463,7 @@ int2 Gameplay::dumbBotDecision() {
 	int2 res = {-1, -1};
 	while(res == int2{-1, -1}){
 		int c = (int)(randToOne()*7.0);
-		res = playMove(c);
+		res = getEmptyPosition(c);
 	}
 	return res;
 }
@@ -457,7 +471,7 @@ int2 Gameplay::dumbBotDecision() {
 int2 Gameplay::smartBotDecision() {
 
 	for(int c=0; c<7; c++){
-		int2 pos = playMove(c);
+		int2 pos = getEmptyPosition(c);
 		if (pos == int2{ -1, -1 }) { continue; }
 
 		grid[pos.y][pos.x] = getPlayerChecker(PLAYERS::PLAYER_TWO);
@@ -473,7 +487,7 @@ int2 Gameplay::smartBotDecision() {
 		}
 	}
 	for(int c=0; c<7; c++){
-		int2 pos = playMove(c);
+		int2 pos = getEmptyPosition(c);
 		if (pos == int2{ -1, -1 }) { continue; }
 
 		grid[pos.y][pos.x] = getPlayerChecker(PLAYERS::PLAYER_ONE);
