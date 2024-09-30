@@ -120,8 +120,8 @@ bool Gameplay::virus(){
 		if(currPos.x-1 >= 0 && grid[currPos.y][currPos.x-1] == type){
 			bfs.push({currPos.x-1, currPos.y});
 		}
-		if(currPos.y-1 >= 0 && currPos.x-1 >= 0 && grid[currPos.y-1][currPos.x+1] == type){
-			bfs.push({currPos.x+1, currPos.y-1});
+		if(currPos.y-1 >= 0 && currPos.x-1 >= 0 && grid[currPos.y-1][currPos.x-1] == type){
+			bfs.push({currPos.x-1, currPos.y-1});
 		}
 	}
 	turnToStone(forGigo);
