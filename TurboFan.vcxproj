@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\BonusSystem.cpp" />
     <ClCompile Include="src\Button.cpp" />
     <ClCompile Include="src\Checker.cpp" />
     <ClCompile Include="src\ConfigManager.cpp" />
@@ -35,6 +36,7 @@
     <ClCompile Include="src\util.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\BonusSystem.h" />
     <ClInclude Include="include\Button.h" />
     <ClInclude Include="include\Checker.h" />
     <ClInclude Include="include\ConfigManager.h" />

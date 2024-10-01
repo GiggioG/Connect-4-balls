@@ -50,6 +50,7 @@ void StateManager::changeGameState(GAME_STATE newState) {
 	currentState = newState;
 	if (state != nullptr) {
 		state->destroy();
+		delete state;
 		state = nullptr;
 	}
 	if (newState == GAME_STATE::START_MENU) {

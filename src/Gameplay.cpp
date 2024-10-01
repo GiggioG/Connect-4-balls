@@ -4,7 +4,6 @@
 #include "ConfigManager.h"
 #include "InputManager.h"
 #include "Engine.h"
-#include <queue>
 
 extern InputManager iptm;
 
@@ -18,20 +17,10 @@ void Gameplay::init() {
 	checkerTextures[1] = loadTexture("basketball.bmp");
 	checkerTextures[2] = loadTexture("stone.bmp");
 
-	bonusTextures[0] = loadTexture("bonus_turn.bmp");
-	bonusTextures[1] = loadTexture("destroy_column.bmp");
-	bonusTextures[2] = loadTexture("remove_one.bmp");
-	bonusTextures[3] = loadTexture("stone_virus.bmp");
-
-	bonusUnavailableTexture = loadTexture("bonusUnavailable.bmp");
+	if (gameType == GAME_TYPE::MADNESS_MULTIPLAYER) { bonusSystem.init(this); }
 
 	m_turnPlayer = PLAYERS::PLAYER_ONE;
 	allCheckersLanded = true;
-
-	for (int i = 0; i < NUMBER_OF_BONUS_TYPES; i++) {
-		usedBonuses[0][i] = false;
-		usedBonuses[1][i] = false;
-	}
 
 	int2 screenDims = getScreenDims();
 	SDL_QueryTexture(tableTexture, nullptr, nullptr, &tableTexDims.x, &tableTexDims.y);
@@ -74,110 +63,21 @@ void Gameplay::init() {
 	}
 }
 
-int Gameplay::checkColumn() {
+int Gameplay::getMouseColumn() {
     if(iptm.m_mouseCoor.y - drawRect.y < 45 * textureToRealRatio || iptm.m_mouseCoor.y - drawRect.y > 1234 * textureToRealRatio) { return -1; }
 	// cout << "in   ";
 	int res = (int)(iptm.m_mouseCoor.x - drawRect.x - 68 * textureToRealRatio) / (int)(211 * textureToRealRatio);
     // cout << res << "\n";
 	return (res < 0 || res > 6) ? -1 : res;
 }
-int Gameplay::checkRow() {
+int Gameplay::getMouseRow() {
     if(iptm.m_mouseCoor.x - drawRect.x < 67 * textureToRealRatio || iptm.m_mouseCoor.x - drawRect.x > 1538 * textureToRealRatio) { return -1; }
 	int res = (int)(iptm.m_mouseCoor.y - drawRect.y - 45 * textureToRealRatio) / (int)(198 * textureToRealRatio);
 	return (res < 0 || res > 5) ? -1 : res;
 }
 
-bool Gameplay::virus(){
-	int column = checkColumn();
-	int row = checkRow();
-	if(row == -1 || column == -1){ return false; }
-
-	CHECKER_TYPES type = grid[row][column];
-
-	vector<int2> forGigo;
-
-	queue<int2> bfs;
-	bfs.push({column, row});
-
-	int cnt = 0;
-	while(cnt < 5 && !bfs.empty()){
-		cnt++;
-		int2 currPos = bfs.front(); bfs.pop();
-		forGigo.push_back(currPos);
-		grid[currPos.y][currPos.x] = CHECKER_TYPES::STONE;
-
-		if(currPos.y-1 >= 0 && grid[currPos.y-1][currPos.x] == type){
-			bfs.push({currPos.x, currPos.y-1});
-		}
-		if(currPos.y-1 >= 0 && currPos.x+1 < 7 && grid[currPos.y-1][currPos.x+1] == type){
-			bfs.push({currPos.x+1, currPos.y-1});
-		}
-		if(currPos.x+1 < 7 && grid[currPos.y][currPos.x+1] == type){
-			bfs.push({currPos.x+1, currPos.y});
-		}
-		if(currPos.y+1 < 6 && currPos.x+1 < 7 && grid[currPos.y+1][currPos.x+1] == type){
-			bfs.push({currPos.x+1, currPos.y+1});
-		}
-		if(currPos.y+1 < 6 && grid[currPos.y+1][currPos.x] == type){
-			bfs.push({currPos.x, currPos.y+1});
-		}
-		if(currPos.y+1 < 6 && currPos.x-1 >= 0 && grid[currPos.y+1][currPos.x-1] == type){
-			bfs.push({currPos.x-1, currPos.y+1});
-		}
-		if(currPos.x-1 >= 0 && grid[currPos.y][currPos.x-1] == type){
-			bfs.push({currPos.x-1, currPos.y});
-		}
-		if(currPos.y-1 >= 0 && currPos.x-1 >= 0 && grid[currPos.y-1][currPos.x-1] == type){
-			bfs.push({currPos.x-1, currPos.y-1});
-		}
-	}
-	turnToStone(forGigo);
-	
-	
-	return true;
-}
-bool Gameplay::destroyColumn() {
-	int column = checkColumn();
-	if(column == -1){ return false; }
-	for(int r=0; r<6; r++){
-		grid[r][column] = CHECKER_TYPES::NONE;
-	}
-	for(int i=0; i<checkers.size(); i++){
-		if(checkers[i].pos.x == column){
-			swap(checkers[i], checkers[checkers.size()-1]);
-			checkers.pop_back();
-			i--;
-		}
-	}
-	return true;
-}
-bool Gameplay::destroyOneChecker() {
-	int column = checkColumn();
-	int row = checkRow();
-	if(row == -1 || column == -1){ return false; }
-	grid[row][column] = CHECKER_TYPES::NONE;
-	for(int r=row; r>0; r--){
-		swap(grid[r][column], grid[r-1][column]);
-	}
-	for(int i=0; i<checkers.size(); i++){
-		if(checkers[i].pos.x == column && checkers[i].pos.y == row){
-			swap(checkers[i], checkers[checkers.size()-1]);
-			checkers.pop_back();
-			i--;
-			break;
-		}
-	}
-	for(int i=0; i<checkers.size(); i++){
-		if(checkers[i].pos.x == column && checkers[i].pos.y < row){
-			// beshe checkers[i].pos = {column, row + 1};
-			checkers[i].pos.y++;
-		}
-	}
-	return true;
-}
-
 int2 Gameplay::getEmptyPosition() {
-    int column = checkColumn();
+    int column = getMouseColumn();
     if(column == -1){ return {-1, -1}; }
     int row = -2;
     for(int r=0; r<6; r++){
@@ -304,49 +204,42 @@ CHECKER_TYPES Gameplay::getPlayerChecker(PLAYERS player) {
 	if (player == PLAYERS::PLAYER_TWO) { return CHECKER_TYPES::PLAYER_TWO; }
 }
 
+int Gameplay::getPlayerNumber(PLAYERS player) {
+	return (int)player - 1;
+}
+
 int Gameplay::getCheckerNumber(CHECKER_TYPES checker){
 	return (int)checker - 1;
 }
 
-int Gameplay::getBonusNumber(BONUS bonus){
-	return (int)bonus - 1;
+void Gameplay::placeChecker(int2 pos, CHECKER_TYPES checker){
+	grid[pos.y][pos.x] = checker;
+	Checker* newChecker = new Checker;
+	newChecker->init(checkerTextures[getCheckerNumber(checker)], drawRect.y, pos, positionDrawRects);
+	animatedCheckers[pos.y][pos.x] = newChecker;
 }
 
-int Gameplay::getPlayerNumber(PLAYERS player){
-	return (int)player - 1;
+void Gameplay::deleteChecker(int2 pos) {
+	grid[pos.y][pos.x] = CHECKER_TYPES::NONE;
+	animatedCheckers[pos.y][pos.x]->destroy();
+	delete animatedCheckers[pos.y][pos.x];
+	animatedCheckers[pos.y][pos.x] = nullptr;
 }
 
-void Gameplay::turnToStone(vector<int2> coords) {
-	for (const int2 c : coords) {
-		grid[c.y][c.x] = CHECKER_TYPES::STONE;
+void Gameplay::handleUserClick() {
+	int2 pos = { getMouseColumn(), getMouseRow() };
+
+	BONUS_RESULT bonusResult = bonusSystem.tryUseBonus(pos);
+	if (bonusResult == BONUS_RESULT::FAIL) { return; }
+	if (bonusResult == BONUS_RESULT::DIDNT_USE || bonusSystem.shouldGiveBonusTurn()) {
+		pos = getEmptyPosition();
+		if (pos == int2{ -1, -1 }) { return;  }
+		placeChecker(pos, getPlayerChecker(m_turnPlayer));
 	}
 
-	for (Checker& checker : checkers) {
-		for (const int2 p : coords) {
-			if (checker.pos == p) {
-				checker.texture = checkerTextures[2];
-			}
-		}
-	}
-}
-
-void Gameplay::drawBonuses() {
-	int x = 20;
-	int selectedOffset = 30;
-
-	if (m_turnPlayer == PLAYERS::PLAYER_TWO) {
-		x = 1700;
-		selectedOffset = -30;
-	}
-
-	
-	for (int i = 0; i < 4; i++) {
-		SDL_Rect bonusRect = { x, 20 + i*(220), 200, 200};
-		if (getBonusNumber(currBonus) == i) { bonusRect.x += selectedOffset; }
-		drawObject(bonusTextures[i], bonusRect);
-		if (usedBonuses[getPlayerNumber(m_turnPlayer)][i]) {
-			drawObject(bonusUnavailableTexture, bonusRect);
-		}
+	if (!bonusSystem.shouldGiveBonusTurn()) {
+		if (m_turnPlayer == PLAYERS::PLAYER_ONE) { m_turnPlayer = PLAYERS::PLAYER_TWO; }
+		else if (m_turnPlayer == PLAYERS::PLAYER_TWO) { m_turnPlayer = PLAYERS::PLAYER_ONE; }
 	}
 }
 
@@ -357,7 +250,13 @@ PLAYERS Gameplay::getCheckerPlayer(CHECKER_TYPES checker) {
 
 void Gameplay::update() {
 	allCheckersLanded = true;
-	for (Checker& c : checkers) { c.update(&allCheckersLanded); }
+	for (int r = 0; r < 6; r++) {
+		for (int c = 0; c < 7; c++) {
+			if (animatedCheckers[r][c] != nullptr) {
+				animatedCheckers[r][c]->update(&allCheckersLanded);
+			}
+		}
+	}
 
 	if (allCheckersLanded) { detectWin(); }
 	if (m_winner != PLAYERS::NONE) {
@@ -379,83 +278,56 @@ void Gameplay::update() {
 		}
 		if (pos.x == -1) { return; }
 
-		grid[pos.y][pos.x] = getPlayerChecker(m_turnPlayer);
-		Checker newChecker;
-		newChecker.init(checkerTextures[getCheckerNumber(grid[pos.y][pos.x])], drawRect.y, pos, positionDrawRects);
-		checkers.push_back(newChecker);
+		placeChecker(pos, getPlayerChecker(PLAYERS::PLAYER_TWO));
 
 		if (m_turnPlayer == PLAYERS::PLAYER_ONE) { m_turnPlayer = PLAYERS::PLAYER_TWO; }
 		else if (m_turnPlayer == PLAYERS::PLAYER_TWO) { m_turnPlayer = PLAYERS::PLAYER_ONE; }
 	}
 	if (iptm.anyKeyIsPressed() && gameType == GAME_TYPE::MADNESS_MULTIPLAYER) {
 		if (!allCheckersLanded) { return; }
-		if (iptm.keyIsPressed(SDL_SCANCODE_1)) { currBonus = BONUS::BONUS_TURN; }
-		if (iptm.keyIsPressed(SDL_SCANCODE_2)) { currBonus = BONUS::DESTROY_COLUMN; }
-		if (iptm.keyIsPressed(SDL_SCANCODE_3)) { currBonus = BONUS::REMOVE_ONE; }
-		if (iptm.keyIsPressed(SDL_SCANCODE_4)) { currBonus = BONUS::VIRUS; }
-		if (iptm.keyIsPressed(SDL_SCANCODE_0)) { currBonus = BONUS::NONE; }
-
-		if (currBonus != BONUS::NONE && usedBonuses[getPlayerNumber(m_turnPlayer)][getBonusNumber(currBonus)]) {
-			currBonus = BONUS::NONE;
-		}
+		bonusSystem.update();
 	}
 	if (iptm.m_mouseOnClick) {
 		if (!allCheckersLanded) { return; }
-		int2 pos = getEmptyPosition();
-		if (pos == int2{ -1, -1 }) { return; }
-		
-		if(currBonus == BONUS::DESTROY_COLUMN){
-			destroyColumn();
-		}else if(currBonus == BONUS::REMOVE_ONE){
-			destroyOneChecker();
-		}else if(currBonus == BONUS::VIRUS){
-			virus();
-		}else{
-			grid[pos.y][pos.x] = getPlayerChecker(m_turnPlayer);
-			Checker newChecker;
-			newChecker.init(checkerTextures[getCheckerNumber(grid[pos.y][pos.x])], drawRect.y, pos, positionDrawRects);
-			checkers.push_back(newChecker);
-		}
-		if(currBonus != BONUS::NONE){ usedBonuses[getPlayerNumber(m_turnPlayer)][getBonusNumber(currBonus)] = true; }
-
-		if(currBonus != BONUS::BONUS_TURN){
-			if (m_turnPlayer == PLAYERS::PLAYER_ONE) { m_turnPlayer = PLAYERS::PLAYER_TWO; }
-			else if (m_turnPlayer == PLAYERS::PLAYER_TWO) { m_turnPlayer = PLAYERS::PLAYER_ONE; }
-		}
-
-		
-		currBonus = BONUS::NONE;
+		handleUserClick();
 	}
 }
 
 void Gameplay::draw() {
 	drawObject(backgroundTexture);
 
-	for (const Checker& c : checkers) { c.draw(); }
+	for (int r = 0; r < 6; r++) {
+		for (int c = 0; c < 7; c++) {
+			if (animatedCheckers[r][c] != nullptr) {
+				animatedCheckers[r][c]->draw();
+			}
+		}
+	}
 	drawObject(tableTexture, drawRect);
 
-	if (gameType == GAME_TYPE::MADNESS_MULTIPLAYER) {
-		drawBonuses();
-	}
+	if (gameType == GAME_TYPE::MADNESS_MULTIPLAYER) { bonusSystem.draw(); }
 
 	//SDL_Texture* test = loadTexture("testSquare.bmp");
 }
 
 void Gameplay::destroy() {
-	for (Checker& c : checkers) {
-		c.destroy();
+	for (int r = 0; r < 6; r++) {
+		for (int c = 0; c < 7; c++) {
+			if (animatedCheckers[r][c] != nullptr) {
+				animatedCheckers[r][c]->destroy();
+				delete animatedCheckers[r][c];
+				animatedCheckers[r][c] = nullptr;
+			}
+		}
 	}
-	checkers.clear();
+
+	if (gameType == GAME_TYPE::MADNESS_MULTIPLAYER) { bonusSystem.destroy(); }
 
 	SDL_DestroyTexture(tableTexture);
 	SDL_DestroyTexture(backgroundTexture);
 	for (int i = 0; i < NUMBER_OF_CHECKER_TYPES; i++) {
 		SDL_DestroyTexture(checkerTextures[i]);
 	}
-	for (int i = 0; i < NUMBER_OF_BONUS_TYPES; i++) {
-		SDL_DestroyTexture(bonusTextures[i]);
-	}
-	SDL_DestroyTexture(bonusUnavailableTexture);
 }
 
 

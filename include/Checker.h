@@ -8,6 +8,7 @@ public:
 	~Checker();
 
 	int2 pos = { -1, -1 };
+	SDL_Rect rect;
 	SDL_Texture* texture;
 	bool reachedTarget = false;
 
@@ -16,6 +17,5 @@ public:
 	void draw() const;
 	void destroy();
 private:
-	SDL_Rect rect;
 	SDL_Rect (*positionDrawRects)[7];
 };

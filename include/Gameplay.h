@@ -4,6 +4,9 @@
 #include "State.h"
 #include "util.h"
 #include "Checker.h"
+#include "BonusSystem.h"
+
+class BonusSystem; /// forward declaration
 
 enum class PLAYERS {
 	NONE = 0,
@@ -27,14 +30,6 @@ enum class GAME_TYPE {
 	MADNESS_MULTIPLAYER = 4
 };
 
-enum class BONUS {
-	NONE = 0,
-	BONUS_TURN = 1,
-	DESTROY_COLUMN = 2,
-	REMOVE_ONE = 3,
-	VIRUS = 4
-};
-
 class Gameplay : public State {
 public:
 	Gameplay();
@@ -43,23 +38,20 @@ public:
 	PLAYERS m_winner = PLAYERS::NONE;
 	GAME_TYPE gameType = GAME_TYPE::NONE;
 
-	static const int NUMBER_OF_CHECKER_TYPES = 3;
-	static const int NUMBER_OF_BONUS_TYPES = 4;
-
 	void init();
 	void update();
 	void draw();
 	void destroy();
+	friend class BonusSystem;
 private:
-	bool usedBonuses[2][NUMBER_OF_BONUS_TYPES] = { 0 };
-	BONUS currBonus = BONUS::NONE;
+	BonusSystem bonusSystem;
+
+	static const int NUMBER_OF_CHECKER_TYPES = 3;
 
 	SDL_Texture* tableTexture = nullptr;
 	SDL_Texture* backgroundTexture = nullptr;
 
-	SDL_Texture* bonusTextures[NUMBER_OF_BONUS_TYPES];
 	SDL_Texture* checkerTextures[NUMBER_OF_CHECKER_TYPES];
-	SDL_Texture* bonusUnavailableTexture = nullptr;
 
 	SDL_Rect drawRect = { 0, 0, 0, 0 };
 
@@ -67,19 +59,16 @@ private:
 	SDL_Rect positionDrawRects[6][7];
 
 	CHECKER_TYPES grid[6][7] = { CHECKER_TYPES::NONE };
+	Checker* animatedCheckers[6][7] = { 0 };
 	PLAYERS m_turnPlayer = PLAYERS::NONE;
 
 	double textureToRealRatio;
 	int2 tableTexDims;
 
-	vector<Checker> checkers;
 	bool allCheckersLanded = true;
 
-	int checkColumn();
-	int checkRow();
-	bool virus();
-	bool destroyColumn();
-	bool destroyOneChecker();
+	int getMouseColumn();
+	int getMouseRow();
 	int2 getEmptyPosition();
 	int2 getEmptyPosition(int column);
 	void detectWin();
@@ -87,9 +76,9 @@ private:
 	int2 smartBotDecision();
 	PLAYERS getCheckerPlayer(CHECKER_TYPES checker);
 	CHECKER_TYPES getPlayerChecker(PLAYERS player);
-	int getCheckerNumber(CHECKER_TYPES checker);
-	int getBonusNumber(BONUS bonus);
 	int getPlayerNumber(PLAYERS player);
-	void turnToStone(vector<int2> coords);
-	void drawBonuses();
+	int getCheckerNumber(CHECKER_TYPES checker);
+	void placeChecker(int2 pos, CHECKER_TYPES checker);
+	void deleteChecker(int2 pos);
+	void handleUserClick();
 };
