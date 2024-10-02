@@ -6,6 +6,7 @@ StartMenu::~StartMenu(){}
 
 void StartMenu::init() {
 	backgroundTexture = loadTexture("menu_background.bmp");
+	bannerTexture = loadTexture("banner.bmp");
 
 	playWithFriendTexture = loadTexture("playWithFriend.bmp");
 	playWithBotTexture = loadTexture("playWithBot.bmp");
@@ -68,6 +69,7 @@ void StartMenu::update() {
 
 void StartMenu::draw() {
 	drawObject(backgroundTexture);
+	drawObject(bannerTexture, { 560, 200, 800, 305});
 	if (menuLevel == MENU_LEVEL::TOP_LEVEL) {
 		for (const Button& b : topLevelButtons) { b.draw(); }
 	}
@@ -81,6 +83,7 @@ void StartMenu::draw() {
 
 void StartMenu::destroy() {
 	SDL_DestroyTexture(backgroundTexture);
+	SDL_DestroyTexture(bannerTexture);
 
 	SDL_DestroyTexture(playWithBotTexture);
 	SDL_DestroyTexture(playWithFriendTexture);

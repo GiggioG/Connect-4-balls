@@ -1,4 +1,3 @@
-- fix start screen to have the game name and credits
 - add sound effects
 - add rules page to start menu
 - display current gamemode and player

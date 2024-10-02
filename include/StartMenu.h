@@ -20,6 +20,7 @@ public:
 	MENU_LEVEL menuLevel = MENU_LEVEL::NONE;
 
 	SDL_Texture* backgroundTexture = nullptr;
+	SDL_Texture* bannerTexture = nullptr;
 
 	SDL_Texture* playWithFriendTexture = nullptr;
 	SDL_Texture* playWithBotTexture = nullptr;
