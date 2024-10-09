@@ -28,6 +28,7 @@ public:
 
 	void drawObject(SDL_Texture* texture);
 	void drawObject(SDL_Texture* texture, SDL_Rect location);
+	void drawObject(SDL_Texture* texture, SDL_Rect srcRect, SDL_Rect location);
 	void drawObject(SDL_Texture* texture, RotatedRect location);
 
 private:
@@ -41,6 +42,9 @@ namespace {
 	}
 	void drawObject(SDL_Texture* texture, SDL_Rect location) {
 		Presenter::m_instance->drawObject(texture, location);
+	}
+	void drawObject(SDL_Texture* texture, SDL_Rect srcRect, SDL_Rect location) {
+		Presenter::m_instance->drawObject(texture, srcRect, location);
 	}
 	void drawObject(SDL_Texture* texture, RotatedRect location) {
 		Presenter::m_instance->drawObject(texture, location);

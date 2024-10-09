@@ -104,6 +104,15 @@ void Presenter::drawObject(SDL_Texture* texture, SDL_Rect location) {
     SDL_RenderCopy(m_main_renderer, texture, NULL, &movedRect);
 }
 
+void Presenter::drawObject(SDL_Texture* texture, SDL_Rect srcRect, SDL_Rect location) {
+    SDL_Rect movedRect = location;
+    if (cameraShiftActive) {
+        movedRect.x -= cameraPos.x;
+        movedRect.y -= cameraPos.y;
+    }
+    SDL_RenderCopy(m_main_renderer, texture, &srcRect, &movedRect);
+}
+
 void Presenter::drawObject(SDL_Texture* texture, RotatedRect location) {
     SDL_Rect movedRect = location.toUnrotatedSdlRect();
     if (cameraShiftActive) {

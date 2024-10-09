@@ -1,3 +1,2 @@
 - add sound effects
 - add rules page to start menu
-- display current gamemode and player

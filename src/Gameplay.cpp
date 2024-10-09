@@ -16,11 +16,14 @@ void Gameplay::init() {
 	checkerTextures[0] = loadTexture("football.bmp");
 	checkerTextures[1] = loadTexture("basketball.bmp");
 	checkerTextures[2] = loadTexture("stone.bmp");
+	gameTypeBanners = loadTexture("gameTypeBanners.bmp");
 
 	if (gameType == GAME_TYPE::MADNESS_MULTIPLAYER) { bonusSystem.init(this); }
 
 	m_turnPlayer = PLAYERS::PLAYER_ONE;
 	allCheckersLanded = true;
+
+	gameTypeBannerSrcRect = { 0, 20 * ((int)gameType - 1), 185, 20};
 
 	int2 screenDims = getScreenDims();
 	SDL_QueryTexture(tableTexture, nullptr, nullptr, &tableTexDims.x, &tableTexDims.y);
@@ -30,6 +33,12 @@ void Gameplay::init() {
 		screenDims.y / 2 - (int)(cfg("TABLE_WIDTH").i * ratio) / 2,
 		cfg("TABLE_WIDTH").i,
 		(int)(cfg("TABLE_WIDTH").i * ratio)
+	};
+	gameTypeBannerRect = {
+		screenDims.x / 2 - 600 / 2,
+		0,
+		600,
+		drawRect.y - 2
 	};
 
 	textureToRealRatio = drawRect.w / (double)tableTexDims.x;
@@ -307,6 +316,8 @@ void Gameplay::draw() {
 
 	if (gameType == GAME_TYPE::MADNESS_MULTIPLAYER) { bonusSystem.draw(); }
 
+	drawObject(gameTypeBanners, gameTypeBannerSrcRect, gameTypeBannerRect);
+
 	//SDL_Texture* test = loadTexture("testSquare.bmp");
 }
 
@@ -325,6 +336,7 @@ void Gameplay::destroy() {
 
 	SDL_DestroyTexture(tableTexture);
 	SDL_DestroyTexture(backgroundTexture);
+	SDL_DestroyTexture(gameTypeBanners);
 	for (int i = 0; i < NUMBER_OF_CHECKER_TYPES; i++) {
 		SDL_DestroyTexture(checkerTextures[i]);
 	}

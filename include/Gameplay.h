@@ -52,8 +52,11 @@ private:
 	SDL_Texture* backgroundTexture = nullptr;
 
 	SDL_Texture* checkerTextures[NUMBER_OF_CHECKER_TYPES];
+	SDL_Texture* gameTypeBanners = nullptr;
 
 	SDL_Rect drawRect = { 0, 0, 0, 0 };
+	SDL_Rect gameTypeBannerRect = { 0, 0, 0, 0 };
+	SDL_Rect gameTypeBannerSrcRect = { 0, 0, 0, 0 };
 
 	SDL_Rect positionRects[6][7] = { 0 };
 	SDL_Rect positionDrawRects[6][7];
